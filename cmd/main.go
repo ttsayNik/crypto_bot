@@ -4,9 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
-	"telebot/internal/adapters/api"
+	"os"
+	"telebot/internal/adapters/api/binance"
 	repo "telebot/internal/adapters/db/sqlite"
+	handler "telebot/internal/adapters/delivery/http"
 	"telebot/internal/usecase"
 	"time"
 
@@ -14,8 +17,7 @@ import (
 )
 
 func main() {
-	ticker := time.NewTicker(10 * time.Second)
-
+	// init db
 	db, err := sql.Open("sqlite3", "telebot.db")
 	if err != nil {
 		log.Println("error opening:", err)
@@ -28,36 +30,48 @@ func main() {
 		high_price BIGINT NOT NULL,
 		low_price BIGINT NOT NULL,
 		last_update TIMESTAMP NOT NULL
-	);
-	`
+		);
+		`
 
 	_, err = db.Exec(query)
 	if err != nil {
 		log.Println("error execute the table")
 	}
 
-	coinRepo := repo.NewCoinStateRepo(db)
-	coinUsecase := usecase.NewCoinStateUsecase(coinRepo)
-	client := api.NewApiClient(&http.Client{}, coinUsecase)
+	// init logger
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))
 
+	// init repositories
+	coinRepo := repo.NewCoinStateRepo(db)
+
+	// init usecases
+	coinUsecase := usecase.NewCoinStateUsecase(coinRepo, logger)
+
+	// init clients
+	apiClient := binance.New(&http.Client{}, coinUsecase, logger)
+	tgClient := handler.NewTGClient(&http.Client{}, coinUsecase, logger)
+
+	http.HandleFunc("GET /telebot", tgClient.GetCoinStates)
+
+	ticker := time.NewTicker(10 * time.Second)
 	go func() {
 		for range ticker.C {
-			client.GetCoinState()
+			apiClient.GetCoinState()
 		}
 	}()
 
-	fmt.Println("thats okey")
+	fmt.Println("server starts at localhost:8080")
 
 	http.ListenAndServe(":8080", nil)
 }
 
-func DropTable(db *sql.DB, table string) error {
-	query := "drop table " + table
+// func DropTable(db *sql.DB, table string) error {
+// 	query := "drop table " + table
 
-	_, err := db.Exec(query)
-	if err != nil {
-		return err
-	}
+// 	_, err := db.Exec(query)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

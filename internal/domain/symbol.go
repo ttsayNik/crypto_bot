@@ -16,10 +16,8 @@ func NewSymbol(symbol string) (Symbol, error) {
 
 	uppercase := strings.ToUpper(symbol)
 
-	fmt.Println(uppercase)
-
 	for i := range uppercase {
-		if (uppercase[i] < 'A' || uppercase[i] > 'Z') && (uppercase[i] < '0' || uppercase[i] > '9' ) {
+		if (uppercase[i] < 'A' || uppercase[i] > 'Z') && (uppercase[i] < '0' || uppercase[i] > '9') {
 			fmt.Println(uppercase[i])
 			return Symbol{}, ErrInvalidSymbol
 		}

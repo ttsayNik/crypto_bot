@@ -54,3 +54,11 @@ func (p *Price) LessThan(price Price) bool {
 func (p *Price) Int64() int64 {
 	return p.price
 }
+
+func (p *Price) String() string {
+	str := strconv.Itoa(int(p.price))
+
+	res := str[:len(str)-Scale] + "." + str[len(str)-Scale:]
+
+	return res
+}

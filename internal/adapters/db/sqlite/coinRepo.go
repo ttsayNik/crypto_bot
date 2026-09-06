@@ -2,8 +2,8 @@ package repo
 
 import (
 	"database/sql"
-	"fmt"
 	"telebot/internal/domain"
+	"time"
 )
 
 type CoinStateRepo struct {
@@ -49,12 +49,69 @@ func (c *CoinStateRepo) Update(coinStates []domain.CoinState) error {
 		return err
 	}
 
-	for i := range coinStates {
-		fmt.Println(coinStates[i])
+	return nil
+}
+
+func (c *CoinStateRepo) Get() ([]domain.CoinState, error) {
+	coinStates := make([]domain.CoinState, 0, 5)
+
+	query := `
+		select * from coin_state
+		order by last_update desc
+		limit 5;
+	`
+
+	rows, err := c.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var symbol string
+		var price, highPrice, lowPrice int64
+		var lastUpdate time.Time
+		err = rows.Scan(&symbol, &price, &highPrice, &lowPrice, &lastUpdate)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+
+		var coinState domain.CoinState
+
+		err := coinState.SetSymbol(symbol)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+		err = coinState.SetPrice(price)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+		err = coinState.SetHighPrice(highPrice)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+		err = coinState.SetLowPrice(lowPrice)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+		err = coinState.SetLastUpdate(lastUpdate)
+		if err != nil {
+			// wrap the error
+			return nil, err
+		}
+
+		coinStates = append(coinStates, coinState)
 	}
 
-	fmt.Println()
-	fmt.Println()
+	if err := rows.Err(); err != nil {
+		// wrap the error
+		return nil, err
+	}
 
-	return nil
+	return coinStates, nil
 }

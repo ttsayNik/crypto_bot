@@ -53,3 +53,54 @@ func (c *CoinState) GetLowPrice() Price {
 func (c *CoinState) GetLastUpdate() time.Time {
 	return c.lastUpdate
 }
+
+func (c *CoinState) SetSymbol(symbol string) error {
+	sym, err := NewSymbol(symbol)
+	if err != nil {
+		return err
+	}
+
+	c.symbol = sym
+
+	return nil
+}
+
+func (c *CoinState) SetPrice(price int64) error {
+	prc, err := NewPriceFromInt64(price)
+	if err != nil {
+		return err
+	}
+
+	c.price = prc
+	return nil
+}
+
+func (c *CoinState) SetHighPrice(highPrice int64) error {
+	prc, err := NewPriceFromInt64(highPrice)
+	if err != nil {
+		return err
+	}
+
+	c.highPrice = prc
+	return nil
+}
+
+func (c *CoinState) SetLowPrice(lowPrice int64) error {
+	prc, err := NewPriceFromInt64(lowPrice)
+	if err != nil {
+		return err
+	}
+
+	c.lowPrice = prc
+	return nil
+}
+
+func (c *CoinState) SetLastUpdate(lastUpdate time.Time) error {
+	if lastUpdate.IsZero() {
+		return ErrTimeNil
+	}
+
+	c.lastUpdate = lastUpdate
+
+	return nil
+}

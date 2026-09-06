@@ -1,8 +1,9 @@
-package api
+package binance
 
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"telebot/internal/domain"
 	"telebot/internal/usecase"
@@ -18,15 +19,17 @@ var coins = []string{
 
 var url = "https://api.binance.com/api/v3/ticker/24hr?symbol="
 
-type ApiClient struct {
+type BinanceClient struct {
 	client *http.Client
 	cu     *usecase.CoinStateUsecase
+	logger *slog.Logger
 }
 
-func NewApiClient(client *http.Client, cu *usecase.CoinStateUsecase) *ApiClient {
-	return &ApiClient{
+func New(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) *BinanceClient {
+	return &BinanceClient{
 		client: client,
 		cu:     cu,
+		logger: logger,
 	}
 }
 
@@ -37,7 +40,7 @@ type PreCoinStateDTO struct {
 	LowPrice  string `json:"lowPrice"`
 }
 
-func (a *ApiClient) GetCoinState() {
+func (a *BinanceClient) GetCoinState() {
 	coinStates := make([]usecase.CoinStateDTO, 0, 5)
 
 	for i := range coins {

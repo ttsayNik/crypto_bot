@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"log/slog"
 	"telebot/internal/domain"
 )
 
@@ -13,14 +14,16 @@ type CoinStateDTO struct {
 
 type CoinStateUsecase struct {
 	cr CoinStateRepo
+	logger *slog.Logger
 }
 
 type CoinStateRepo interface {
 	Update(coinStates []domain.CoinState) error
+	Get() ([]domain.CoinState, error)
 }
 
-func NewCoinStateUsecase(cr CoinStateRepo) *CoinStateUsecase {
-	return &CoinStateUsecase{cr: cr}
+func NewCoinStateUsecase(cr CoinStateRepo, logger *slog.Logger) *CoinStateUsecase {
+	return &CoinStateUsecase{cr: cr, logger: logger}
 }
 
 func (c *CoinStateUsecase) Update(coinStatesDTO []CoinStateDTO) error {
@@ -61,4 +64,14 @@ func (c *CoinStateUsecase) Update(coinStatesDTO []CoinStateDTO) error {
 	}
 
 	return nil
+}
+
+func (c *CoinStateUsecase) Get() ([]domain.CoinState, error) {
+	coins, err := c.cr.Get()
+	if err != nil {
+		// log the error
+		return nil, err
+	}
+
+	return coins, nil
 }
