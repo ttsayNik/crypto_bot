@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"log/slog"
 	"telebot/internal/domain"
 )
@@ -32,27 +33,27 @@ func (c *CoinStateUsecase) Update(coinStatesDTO []CoinStateDTO) error {
 	for i := range coinStatesDTO {
 		symbol, err := domain.NewSymbol(coinStatesDTO[i].Symbol)
 		if err != nil {
-			return nil
+			return fmt.Errorf("failed creating symbol from %s: %w", &symbol, err)
 		}
 
 		price, err := domain.NewPriceFromInt64(coinStatesDTO[i].Price)
 		if err != nil {
-			return nil
+			return fmt.Errorf("error creating price from %d: %w", price.Int64(), err)
 		}
 
 		highPrice, err := domain.NewPriceFromInt64(coinStatesDTO[i].HighPrice)
 		if err != nil {
-			return nil
+			return fmt.Errorf("error creating price from %d: %w", highPrice.Int64(), err)
 		}
 
 		lowPrice, err := domain.NewPriceFromInt64(coinStatesDTO[i].LowPrice)
 		if err != nil {
-			return nil
+			return fmt.Errorf("error creating price from %d: %w", lowPrice.Int64(), err)
 		}
 
 		coinState, err := domain.NewCoinState(symbol, price, highPrice, lowPrice)
 		if err != nil {
-			return nil
+			return fmt.Errorf("error creating coin state: %w", err)
 		}
 
 		coinStates = append(coinStates, *coinState)
@@ -69,8 +70,7 @@ func (c *CoinStateUsecase) Update(coinStatesDTO []CoinStateDTO) error {
 func (c *CoinStateUsecase) Get() ([]domain.CoinState, error) {
 	coins, err := c.cr.Get()
 	if err != nil {
-		// log the error
-		return nil, err
+		return nil, fmt.Errorf("failed to retrieve current cryptocurrency prices") // find the repeat this error
 	}
 
 	return coins, nil

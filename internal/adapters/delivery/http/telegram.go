@@ -3,10 +3,25 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"telebot/internal/usecase"
 	"time"
 )
+
+type Handler struct {
+	client *http.Client
+	cu     *usecase.CoinStateUsecase
+	logger *slog.Logger
+}
+
+func NewTGClient(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) *Handler {
+	return &Handler{
+		client: client,
+		cu:     cu,
+		logger: logger,
+	}
+}
 
 type coinStateResponse struct {
 	Symbol         string    `json:"symbol"`
@@ -17,10 +32,10 @@ type coinStateResponse struct {
 	ProcentChanges string    `json:"procent_changes"`
 }
 
-func (h *TGClient) GetCoinStates(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetCoinStates(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.cu.Get()
 	if err != nil {
-		fmt.Println("TRUBAAAAAAAAAAAAAAAAAAAAAAAAA")
+		h.logger.Error(fmt.Sprintf("failed try to get the coin states", err))
 		return
 	}
 
@@ -41,7 +56,7 @@ func (h *TGClient) GetCoinStates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(coinStates); err != nil {
-		log.Println("error here")
+		h.logger.Error(fmt.Sprintf("failed try to encode coin states", err))
 		return
 	}
 }

@@ -49,14 +49,16 @@ func main() {
 
 	// init clients
 	apiClient := binance.New(&http.Client{}, coinUsecase, logger)
-	tgClient := handler.NewTGClient(&http.Client{}, coinUsecase, logger)
+	handler := handler.NewTGClient(&http.Client{}, coinUsecase, logger)
 
-	http.HandleFunc("GET /telebot", tgClient.GetCoinStates)
+	// register handlers
+	http.HandleFunc("GET /telebot", handler.GetCoinStates)
 
-	ticker := time.NewTicker(10 * time.Second)
+	// init producer
+	ticker := time.NewTicker(5 * time.Minute)
 	go func() {
 		for range ticker.C {
-			apiClient.GetCoinState()
+			apiClient.GetCoinStates()
 		}
 	}()
 

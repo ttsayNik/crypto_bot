@@ -2,7 +2,7 @@ package binance
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"telebot/internal/domain"
@@ -17,7 +17,7 @@ var coins = []string{
 	"XRPUSDT",
 }
 
-var url = "https://api.binance.com/api/v3/ticker/24hr?symbol="
+var url = "https://api.binance.com/api/v3/ticker/24hr?symbol=[\"BTCUSDT\", \"ETHUSDT\", \"SOLUSDT\", \"BNBUSDT\", \"XRPUSDT\"]"
 
 type BinanceClient struct {
 	client *http.Client
@@ -40,35 +40,36 @@ type PreCoinStateDTO struct {
 	LowPrice  string `json:"lowPrice"`
 }
 
-func (a *BinanceClient) GetCoinState() {
+func (a *BinanceClient) GetCoinStates() {
 	coinStates := make([]usecase.CoinStateDTO, 0, 5)
 
-	for i := range coins {
-		resp, err := a.client.Get(url + coins[i])
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	resp, err := a.client.Get(url) // we do batch request
+	if err != nil {
+		a.logger.Error(fmt.Sprintf("failed batch request: %v", err))
+		return
+	}
+	defer resp.Body.Close()
 
-		preCoinDTO := &PreCoinStateDTO{}
-		err = json.NewDecoder(resp.Body).Decode(preCoinDTO)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+	preCoinDTOs := make([]PreCoinStateDTO, 0, 5)
+	err = json.NewDecoder(resp.Body).Decode(preCoinDTOs)
+	if err != nil {
+		a.logger.Error(fmt.Sprintf("failed decode reponse body: %v", err))
+		return
+	}
 
-		coinDTO, err := ToDTO(preCoinDTO)
+	for i := range preCoinDTOs {
+		coinDTO, err := ToDTO(&preCoinDTOs[i])
 		if err != nil {
-			log.Println(err)
+			a.logger.Error(fmt.Sprintf("failed prase predto to dto: %v", err))
 			return
 		}
 
 		coinStates = append(coinStates, *coinDTO)
 	}
 
-	err := a.cu.Update(coinStates)
+	err = a.cu.Update(coinStates)
 	if err != nil {
-		log.Println(err)
+		a.logger.Error(fmt.Sprintf("failed to update cryptocurrency rates: %v", err))
 		return
 	}
 }
@@ -76,17 +77,17 @@ func (a *BinanceClient) GetCoinState() {
 func ToDTO(preCoinDTO *PreCoinStateDTO) (*usecase.CoinStateDTO, error) {
 	price, err := domain.NewPriceFromString(preCoinDTO.Price)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating price from string %s: %w", &price, err)
 	}
 
 	highPrice, err := domain.NewPriceFromString(preCoinDTO.HighPrice)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating price from string %s: %w", &highPrice, err)
 	}
 
 	lowPrice, err := domain.NewPriceFromString(preCoinDTO.LowPrice)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating price from string %s: %w", &lowPrice, err)
 	}
 
 	coinStateDTO := &usecase.CoinStateDTO{

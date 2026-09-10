@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const Scale = 8
+const scale = 8
 
 type Price struct {
 	price int64
@@ -24,10 +24,10 @@ func NewPriceFromString(price string) (Price, error) {
 
 	dollar, cents, _ := strings.Cut(price, ".")
 
-	if len(cents) < Scale {
-		cents += strings.Repeat("0", Scale-len(cents))
+	if len(cents) < scale {
+		cents += strings.Repeat("0", scale-len(cents))
 	} else {
-		cents = cents[:Scale]
+		cents = cents[:scale]
 	}
 
 	priceWithoutDot, err := strconv.ParseInt(dollar+cents, 10, 64)
@@ -55,10 +55,11 @@ func (p *Price) Int64() int64 {
 	return p.price
 }
 
+// TODO: fix low input panic
 func (p *Price) String() string {
 	str := strconv.Itoa(int(p.price))
 
-	res := str[:len(str)-Scale] + "." + str[len(str)-Scale:]
+	res := str[:len(str)-scale] + "." + str[len(str)-scale:]
 
 	return res
 }
