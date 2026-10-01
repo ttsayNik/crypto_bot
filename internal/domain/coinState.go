@@ -5,11 +5,12 @@ import (
 )
 
 type CoinState struct {
-	symbol     Symbol // name is a primary key
-	price      Price
-	highPrice  Price
-	lowPrice   Price
-	lastUpdate time.Time
+	symbol        Symbol // name is a primary key
+	price         Price
+	highPrice     Price
+	lowPrice      Price
+	percentChange Percent
+	lastUpdate    time.Time
 }
 
 func NewCoinState(symbol Symbol, price, highPrice, lowPrice Price) (*CoinState, error) {
@@ -48,6 +49,10 @@ func (c *CoinState) GetHighPrice() Price {
 
 func (c *CoinState) GetLowPrice() Price {
 	return c.lowPrice
+}
+
+func (c *CoinState) GetPercantChange() Percent {
+	return c.percentChange
 }
 
 func (c *CoinState) GetLastUpdate() time.Time {
@@ -92,6 +97,12 @@ func (c *CoinState) SetLowPrice(lowPrice int64) error {
 	}
 
 	c.lowPrice = prc
+	return nil
+}
+
+func (c *CoinState) SetPercentChange(percent Percent) error {
+	c.percentChange = percent
+
 	return nil
 }
 

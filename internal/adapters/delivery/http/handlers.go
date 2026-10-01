@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"telebot/internal/domain"
 	"telebot/internal/usecase"
 	"time"
 )
@@ -15,12 +16,16 @@ type Handler struct {
 	logger *slog.Logger
 }
 
-func NewTGClient(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) *Handler {
+func New(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) (*Handler, error) {
+	if client == nil || cu == nil || logger == nil {
+		return nil, domain.ErrNilPointer
+	}
+
 	return &Handler{
 		client: client,
 		cu:     cu,
 		logger: logger,
-	}
+	}, nil
 }
 
 type coinStateResponse struct {
@@ -28,14 +33,14 @@ type coinStateResponse struct {
 	Price          string    `json:"price"`
 	HighPrice      string    `json:"high"`
 	LowPrice       string    `json:"low"`
+	PercentChanges string    `json:"procent_changes"`
 	LastUpdate     time.Time `json:"last_update"`
-	ProcentChanges string    `json:"procent_changes"`
 }
 
 func (h *Handler) GetCoinStates(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.cu.Get()
 	if err != nil {
-		h.logger.Error(fmt.Sprintf("failed try to get the coin states", err))
+		h.logger.Error(fmt.Sprintf("failed try to get the coin states: %v", err))
 		return
 	}
 
@@ -45,18 +50,20 @@ func (h *Handler) GetCoinStates(w http.ResponseWriter, r *http.Request) {
 		price := resp[i].GetPrice()
 		high := resp[i].GetHighPrice()
 		low := resp[i].GetLowPrice()
+		percent := resp[i].GetPercantChange()
 
 		coinStates[len(resp)-(i+1)] = coinStateResponse{
-			Symbol:     symbol.String(),
-			Price:      price.String(),
-			HighPrice:  high.String(),
-			LowPrice:   low.String(),
-			LastUpdate: resp[i].GetLastUpdate(),
+			Symbol:         symbol.String(),
+			Price:          price.String(),
+			HighPrice:      high.String(),
+			LowPrice:       low.String(),
+			PercentChanges: percent.String(),
+			LastUpdate:     resp[i].GetLastUpdate(),
 		}
 	}
 
 	if err := json.NewEncoder(w).Encode(coinStates); err != nil {
-		h.logger.Error(fmt.Sprintf("failed try to encode coin states", err))
+		h.logger.Error(fmt.Sprintf("failed try to encode coin states: %v", err))
 		return
 	}
 }

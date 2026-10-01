@@ -25,12 +25,16 @@ type BinanceClient struct {
 	logger *slog.Logger
 }
 
-func New(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) *BinanceClient {
+func New(client *http.Client, cu *usecase.CoinStateUsecase, logger *slog.Logger) (*BinanceClient, error) {
+	if client == nil || cu == nil || logger == nil {
+		return nil, domain.ErrNilPointer
+	}
+
 	return &BinanceClient{
 		client: client,
 		cu:     cu,
 		logger: logger,
-	}
+	}, nil
 }
 
 type PreCoinStateDTO struct {
@@ -51,7 +55,7 @@ func (a *BinanceClient) GetCoinStates() {
 	defer resp.Body.Close()
 
 	preCoinDTOs := make([]PreCoinStateDTO, 0, 5)
-	err = json.NewDecoder(resp.Body).Decode(preCoinDTOs)
+	err = json.NewDecoder(resp.Body).Decode(&preCoinDTOs)
 	if err != nil {
 		a.logger.Error(fmt.Sprintf("failed decode reponse body: %v", err))
 		return

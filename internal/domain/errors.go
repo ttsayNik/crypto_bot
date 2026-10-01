@@ -13,6 +13,9 @@ var (
 	// Price
 	ErrPriceLessThanNull  = errors.New("the set price is less than zero")
 	ErrInvalidPriceFormat = errors.New("invalid price format")
+	
+	// Percent
+	ErrZeroBasePrice = errors.New("base couldn`t to be zero")
 
 	// Time
 	ErrTimeNil = errors.New("time not specified")
